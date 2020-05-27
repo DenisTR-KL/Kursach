@@ -1,0 +1,60 @@
+#include <windows.h>
+#include <iostream>
+#include <time.h>
+
+#define COUNT_THREADS 5  //Константное количество потоков
+#define ITERATIONS 101
+
+using namespace std;
+
+CRITICAL_SECTION section = { 0 }; //Это нужно, что бы созать ту самую секцию
+
+VOID CriticalSec(VOID);
+
+DWORD WINAPI CritSecFunc(LPVOID lpParam);
+
+
+
+int main(int argc, char* args[])
+{
+	CriticalSec();
+
+	system("pause");
+	return 0;
+}
+
+VOID CriticalSec(VOID)
+{
+	HANDLE threads[COUNT_THREADS];
+
+	InitializeCriticalSection(&section);
+	for (DWORD i = 0; i < COUNT_THREADS; ++i)
+	{
+		DWORD *tmp = new DWORD;
+		*tmp = i;
+		threads[i] = CreateThread(NULL, 0, CritSecFunc, tmp, 0, 0);
+	}
+
+	WaitForMultipleObjects(COUNT_THREADS, threads, TRUE, INFINITE);
+	DeleteCriticalSection(&section);
+
+	for (size_t i = 0; i < COUNT_THREADS; ++i)
+	{
+		if (threads[i] != INVALID_HANDLE_VALUE)
+			CloseHandle(threads[i]);
+	}
+}
+
+DWORD WINAPI CritSecFunc(LPVOID lpParam)
+{
+	for (DWORD i = 0; i < ITERATIONS; ++i)
+	{
+		EnterCriticalSection(&section);
+		wcout << L"Thread " << *(DWORD*)lpParam
+			<< L" : " << i << endl;
+		LeaveCriticalSection(&section);
+		Sleep(rand() % 16 + 10);
+	}
+
+	ExitThread(0);
+}
