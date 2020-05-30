@@ -1,0 +1,175 @@
+#include <windows.h>
+//Для того, что бы считать файл
+#include <iostream>
+#include <string> // подключаем строки
+#include <fstream>
+
+#include <time.h>
+
+#include <thread>
+#include <chrono>
+
+
+#include <windows.h>
+#include <iostream>
+
+
+#include <cstring>//Для того, что бы использовать strcpy
+
+#define COUNT_THREADS 5  //Константное количество потоков
+#define ITERATIONS 101
+
+using namespace std;
+
+CRITICAL_SECTION section = { 0 }; //Это нужно, что бы созать ту самую секцию
+
+VOID CriticalSec(VOID);
+
+DWORD WINAPI CritSecFunc(LPVOID lpParam);
+
+const int razm = 20;
+
+class workClass
+{
+public:
+
+	string nachinka[razm];
+
+
+	void sin()
+	{
+		//CriticalSec();
+		ifstream fin;
+		fin.open("d:\\1\\json.txt");
+
+		const int razm = 20;
+		string buf[razm];
+
+		if (!fin.is_open())
+		{
+			cout << "Oshibka" << endl;
+		}
+		else
+		{
+			cout << "Horasho" << endl;
+
+			string str;
+
+			int j = 0;
+
+			while (!fin.eof()) { // пока не достигнут конец файла класть очередную строку в переменную (str)
+		
+				fin >> str;
+
+				if (str.size() > 0)
+				{
+					str.pop_back();
+				}
+				buf[j] = string(str);
+
+				if (j > 1)
+				{
+					nachinka[j - 2] = buf[j];
+				}
+				j++;
+			}
+		}		
+		fin.close();
+		system("pause");
+	
+	}
+
+
+	void out()
+	{
+		cout << "=========================================" << endl;
+			for (int i = 0; i < 20; i++)
+			{
+				if (nachinka[i].length()>1)
+				{
+					cout << "i = " << nachinka[i] << endl;	
+				}
+				
+			}
+	}
+
+
+	void krit() {
+
+		HANDLE threads[COUNT_THREADS];
+
+		InitializeCriticalSection(&section);
+		for (DWORD i = 0; i < COUNT_THREADS; ++i)
+		{
+			DWORD *tmp = new DWORD;
+			*tmp = i;
+			threads[i] = CreateThread(NULL, 0, CritSecFunc, tmp, 0, 0);
+		}
+
+		WaitForMultipleObjects(COUNT_THREADS, threads, TRUE, INFINITE);
+		DeleteCriticalSection(&section);
+
+		for (size_t i = 0; i < COUNT_THREADS; ++i)
+		{
+			if (threads[i] != INVALID_HANDLE_VALUE)
+				CloseHandle(threads[i]);
+		}
+	}
+
+
+private:
+
+};
+
+DWORD  WINAPI CritSecFunc(LPVOID lpParam)
+{
+	for (DWORD i = 0; i < ITERATIONS; ++i)
+	{
+		EnterCriticalSection(&section);
+
+
+
+		wcout << L" Thread " << *(DWORD*)lpParam << L" : " << i << L" This Thread have id= " << this_thread::get_id() << L" This Thread have cout information " << endl;
+
+		LeaveCriticalSection(&section);
+		Sleep(rand() % 16 + 10);
+	}
+
+	ExitThread(0);
+}
+
+
+int main(int argc, char* args[])
+{
+	//CriticalSec();
+
+	workClass first;
+	int menu = 0;
+
+	setlocale(LC_ALL, "Russian");
+
+	cout << "Добро пожаловать в лучшее консольное приложение на планете!"<< endl;
+	cout << "Оно имеет чудесный функционал, пускай  и весьма ситуативный. Если у вас  по такому адресу d:\\1\\json.txt" << endl;
+	cout << "хранится массив данных  строкового(string) типа в формате  JSON, не больше 12 элементов, то оно сможет их считать и что нибудь с ними сделать!" << endl;
+	
+	cout << "Если вы нажмете кнопку '1', то оно считает данные " << endl;
+	cout << "Если вы нажмете кнопку '2', то оно выведет вам данные на экран обычным способом, после чего  " << endl;
+	cout << "создаст 5 потоков, которые будут симулировать работу, после чего патоки будут уничтожены" << endl;
+	for (int i = 0; i < 10; i++)
+	{
+		cin >> menu;
+		switch (menu)
+		{
+		case 1:first.sin();
+
+		case 2:first.out();
+
+		default:
+			break;
+		}
+	}
+
+
+	system("pause");
+	return 0;
+}
